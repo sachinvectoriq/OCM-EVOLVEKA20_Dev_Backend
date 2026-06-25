@@ -1,0 +1,43 @@
+
+# FastAPI Application
+fastapi>=0.109.0
+uvicorn[standard]>=0.27.0
+
+# Azure Core Dependencies
+azure-search-documents>=11.6.0b1  # Pre-release required for AIServicesAccountIdentity
+azure-storage-blob>=12.24.0
+azure-identity>=1.15.0
+azure-cosmos>=4.5.0
+azure-keyvault-secrets>=4.9.0
+
+# AI and Agent Framework
+agent-framework==1.0.0b260130
+azure-ai-inference>=1.0.0b1
+azure-ai-projects>=1.0.0b1
+azure-ai-evaluation>=1.0.0b1
+openai>=1.10.0
+tiktoken>=0.5.0
+
+azure-monitor-opentelemetry==1.8.6
+azure-monitor-opentelemetry-exporter==1.0.0b48
+
+opentelemetry-api==1.39.0
+opentelemetry-sdk==1.39.0
+
+opentelemetry-instrumentation==0.60b0
+opentelemetry-semantic-conventions==0.60b0
+opentelemetry-semantic-conventions-ai==0.4.13
+
+# Retry Logic
+tenacity>=8.2.0
+dependency-injector==4.48.3
+
+
+#SAML
+python3-saml==1.16.0
+pyJWT
+lxml==5.3.1
+xmlsec==1.3.14
+python-pptx==1.0.2
+reportlab==4.2.2
+Pillow==11.0.0
