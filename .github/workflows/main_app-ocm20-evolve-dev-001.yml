@@ -63,4 +63,4 @@ jobs:
         with:
           app-name: 'app-ocm20-evolve-dev-001'
           slot-name: 'Production'
-          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_E3266D58749A43B9BB3071B0F0F075A0 }}
+          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_A37A964B7EEA44E389FEE452423BBC94 }}
