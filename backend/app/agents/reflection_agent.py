@@ -180,7 +180,7 @@ class ReflectionAgent:
             if doc.reranker_score is not None:
                 parts.append(f"Reranker Score: {doc.reranker_score:.4f}")
             parts.append("\n--- Content ---")
-            parts.append(doc.content[:500] + ("..." if len(doc.content) > 500 else ""))
+            parts.append(doc.content)
             parts.append("--- End Content ---")
             parts.append("-" * 80)
         
