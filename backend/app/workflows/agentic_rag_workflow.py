@@ -195,7 +195,7 @@ class AgenticRAGWorkflow:
             await ctx.send_message(state)
             return
 
-        if state.current_attempt == 1 and len(state.current_results) >= 3:
+        if state.current_attempt == 1 and len(state.current_results) >= 2:
 
 
             high_confidence_results = [
