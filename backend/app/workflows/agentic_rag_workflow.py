@@ -203,7 +203,7 @@ class AgenticRAGWorkflow:
                  if r.reranker_score is not None and r.reranker_score >= 2.4
             ]
               
-            if len(high_confidence_results) >= 3:
+            if len(high_confidence_results) >= 2:
                 self.logger.info("[Reflection] Fast finalize triggered (skipping LLM reflection)")
                 state.vetted_results = high_confidence_results
                 state.decision = "finalize"
