@@ -36,27 +36,27 @@ from app.prompts.templates import (
 
 FALLBACK_NO_RELEVANT_CONTENT = {
     Language.ENGLISH: (
-        "I couldn't find relevant information in the content documents to answer your "
-        "question. This may be due to applied filters limiting available results. "
-        "Please try rephrasing your question, adjusting your filters, or check if the "
-        "information exists in the uploaded documents."
+        "The search didn't return any relevant documents. Please try rephrasing your "
+        "question, providing more context, or adjusting your filters (i.e., selecting "
+        "a different persona or clearing out the persona option)."
     ),
     Language.FRENCH_CANADIAN: (
-        "Je n'ai pas trouvé d'information pertinente dans les documents pour répondre "
-        "à votre question. Cela peut être dû à des filtres limitant les résultats "
-        "disponibles. Veuillez reformuler votre question, ajuster vos filtres ou "
-        "vérifier si l'information existe dans les documents téléversés."
+        "La recherche n'a renvoyé aucun document pertinent. Veuillez reformuler votre "
+        "question, fournir plus de contexte ou ajuster vos filtres (c.-à-d. "
+        "sélectionner une autre persona ou effacer l'option de persona)."
     ),
 }
 
 FALLBACK_LIMITED_RESULTS = {
     Language.ENGLISH: (
-        "I couldn't find relevant information in the content documents to answer your "
-        "question. This may be due to limited available results."
+        "The search didn't return any relevant documents. Please try rephrasing your "
+        "question, providing more context, or adjusting your filters (i.e., selecting "
+        "a different persona or clearing out the persona option)."
     ),
     Language.FRENCH_CANADIAN: (
-        "Je n'ai pas trouvé d'information pertinente dans les documents pour répondre "
-        "à votre question. Le nombre de résultats disponibles est peut-être limité."
+        "La recherche n'a renvoyé aucun document pertinent. Veuillez reformuler votre "
+        "question, fournir plus de contexte ou ajuster vos filtres (c.-à-d. "
+        "sélectionner une autre persona ou effacer l'option de persona)."
     ),
 }
 
@@ -73,15 +73,14 @@ ANSWER_GENERATION_ERROR = {
 
 NO_DOCUMENTS_FALLBACK = {
     Language.ENGLISH: (
-        "I don't have enough information in the available documents to answer your "
-        "question. The search didn't return any relevant documents. Please try "
-        "rephrasing your question, adjusting your filters, or providing more context."
+        "The search didn't return any relevant documents. Please try rephrasing your "
+        "question, providing more context, or adjusting your filters (i.e., selecting "
+        "a different persona or clearing out the persona option)."
     ),
     Language.FRENCH_CANADIAN: (
-        "Je n'ai pas suffisamment d'information dans les documents disponibles pour "
-        "répondre à votre question. La recherche n'a renvoyé aucun document "
-        "pertinent. Veuillez reformuler votre question, ajuster vos filtres ou "
-        "fournir plus de contexte."
+        "La recherche n'a renvoyé aucun document pertinent. Veuillez reformuler votre "
+        "question, fournir plus de contexte ou ajuster vos filtres (c.-à-d. "
+        "sélectionner une autre persona ou effacer l'option de persona)."
     ),
 }
 
