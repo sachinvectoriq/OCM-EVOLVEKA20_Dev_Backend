@@ -11,7 +11,6 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from azure.cosmos.aio import CosmosClient
-from azure.cosmos import exceptions
 
 from app.core.container import Container
 
@@ -102,22 +101,47 @@ async def get_all_report_access(
 
 @router.delete("/delete")
 async def delete_report_access(
-    id: str,
     user_mail: str,
+    user_name: str,
     cosmos_client: CosmosClient = Depends(get_cosmos_client),
 ):
     try:
         db = cosmos_client.get_database_client("report-access-table")
         container = db.get_container_client("report-access-container")
 
-        # ``user_mail`` is the partition key for this container, so it MUST be
-        # supplied alongside the item id. Passing the wrong partition key (e.g.
-        # the id) is what causes Cosmos to return a 404 "document not found".
-        await container.delete_item(item=id, partition_key=user_mail)
+        # We don't know the id up front, so look up all matching records by
+        # user_mail (the partition key) + user_name, then delete each one.
+        query = (
+            "SELECT c.id FROM c "
+            "WHERE c.record_type = 'report_access' "
+            "AND c.user_mail = @user_mail AND c.user_name = @user_name"
+        )
+        parameters = [
+            {"name": "@user_mail", "value": user_mail},
+            {"name": "@user_name", "value": user_name},
+        ]
 
-        return {"message": "Report access record deleted successfully"}
+        ids = []
+        async for item in container.query_items(
+            query=query,
+            parameters=parameters,
+            partition_key=user_mail,
+        ):
+            ids.append(item["id"])
 
-    except exceptions.CosmosResourceNotFoundError:
-        raise HTTPException(status_code=404, detail="Report access record not found")
+        if not ids:
+            raise HTTPException(status_code=404, detail="Report access record not found")
+
+        # user_mail is the partition key, so it must be supplied for each delete.
+        for record_id in ids:
+            await container.delete_item(item=record_id, partition_key=user_mail)
+
+        return {
+            "message": "Report access record(s) deleted successfully",
+            "deleted_count": len(ids),
+        }
+
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
