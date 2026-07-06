@@ -1,8 +1,8 @@
 """
 Report Access API
 
-Handles inserting, fetching, and deleting
-report access logs from Cosmos DB.
+Handles inserting and fetching report access logs
+from Cosmos DB.
 """
 
 import uuid
@@ -11,6 +11,7 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from azure.cosmos.aio import CosmosClient
+from azure.cosmos import exceptions
 
 from app.core.container import Container
 
@@ -20,18 +21,13 @@ router = APIRouter(prefix="/report-access")
 
 
 # ---------------------------
-# Request Models
+# Request Model
 # ---------------------------
 
 class ReportAccessRequest(BaseModel):
     user_mail: str
     user_name: str
     provider_name: str
-
-
-class DeleteReportAccessRequest(BaseModel):
-    user_mail: str
-    user_name: str
 
 
 # ---------------------------
@@ -53,8 +49,8 @@ async def insert_report_access(
     cosmos_client: CosmosClient = Depends(get_cosmos_client),
 ):
     try:
-        db = cosmos_client.get_database_client("report-access-table-evolve")
-        container = db.get_container_client("report-access-table-evolve")
+        db = cosmos_client.get_database_client("report-access-table")
+        container = db.get_container_client("report-access-container")
 
         document = {
             "id": str(uuid.uuid4()),
@@ -82,13 +78,12 @@ async def get_all_report_access(
     cosmos_client: CosmosClient = Depends(get_cosmos_client),
 ):
     try:
-        db = cosmos_client.get_database_client("report-access-table-evolve")
-        container = db.get_container_client("report-access-table-evolve")
+        db = cosmos_client.get_database_client("report-access-table")
+        container = db.get_container_client("report-access-container")
 
         query = "SELECT * FROM c WHERE c.record_type = 'report_access'"
 
         items = []
-
         async for item in container.query_items(query=query):
             items.append(item)
 
@@ -102,54 +97,27 @@ async def get_all_report_access(
 
 
 # ---------------------------
-# 3️⃣ Delete Record
+# 3️⃣ Delete Access Record
 # ---------------------------
 
 @router.delete("/delete")
 async def delete_report_access(
-    request: DeleteReportAccessRequest,
+    id: str,
+    user_mail: str,
     cosmos_client: CosmosClient = Depends(get_cosmos_client),
 ):
     try:
-        db = cosmos_client.get_database_client("report-access-table-evolve")
-        container = db.get_container_client("report-access-table-evolve")
+        db = cosmos_client.get_database_client("report-access-table")
+        container = db.get_container_client("report-access-container")
 
-        query = """
-        SELECT * FROM c
-        WHERE c.user_mail = @user_mail
-        AND c.user_name = @user_name
-        AND c.record_type = 'report_access'
-        """
+        # ``user_mail`` is the partition key for this container, so it MUST be
+        # supplied alongside the item id. Passing the wrong partition key (e.g.
+        # the id) is what causes Cosmos to return a 404 "document not found".
+        await container.delete_item(item=id, partition_key=user_mail)
 
-        parameters = [
-            {"name": "@user_mail", "value": request.user_mail},
-            {"name": "@user_name", "value": request.user_name},
-        ]
+        return {"message": "Report access record deleted successfully"}
 
-        items = []
-
-        async for item in container.query_items(
-            query=query,
-            parameters=parameters
-        ):
-            items.append(item)
-
-        if not items:
-            raise HTTPException(
-                status_code=404,
-                detail="No matching record found"
-            )
-
-        for item in items:
-            await container.delete_item(
-                item=item["id"],
-                partition_key=item["user_mail"]
-            )
-
-        return {
-            "message": "Report access record(s) deleted successfully",
-            "deleted_count": len(items)
-        }
-
+    except exceptions.CosmosResourceNotFoundError:
+        raise HTTPException(status_code=404, detail="Report access record not found")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
