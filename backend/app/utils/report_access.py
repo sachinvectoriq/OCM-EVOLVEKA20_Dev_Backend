@@ -29,6 +29,11 @@ class ReportAccessRequest(BaseModel):
     provider_name: str
 
 
+class ReportAccessDeleteRequest(BaseModel):
+    user_mail: str
+    user_name: str
+
+
 # ---------------------------
 # Dependency
 # ---------------------------
@@ -101,8 +106,7 @@ async def get_all_report_access(
 
 @router.delete("/delete")
 async def delete_report_access(
-    user_mail: str,
-    user_name: str,
+    request: ReportAccessDeleteRequest,
     cosmos_client: CosmosClient = Depends(get_cosmos_client),
 ):
     try:
@@ -117,15 +121,15 @@ async def delete_report_access(
             "AND c.user_mail = @user_mail AND c.user_name = @user_name"
         )
         parameters = [
-            {"name": "@user_mail", "value": user_mail},
-            {"name": "@user_name", "value": user_name},
+            {"name": "@user_mail", "value": request.user_mail},
+            {"name": "@user_name", "value": request.user_name},
         ]
 
         ids = []
         async for item in container.query_items(
             query=query,
             parameters=parameters,
-            partition_key=user_mail,
+            partition_key=request.user_mail,
         ):
             ids.append(item["id"])
 
@@ -134,7 +138,7 @@ async def delete_report_access(
 
         # user_mail is the partition key, so it must be supplied for each delete.
         for record_id in ids:
-            await container.delete_item(item=record_id, partition_key=user_mail)
+            await container.delete_item(item=record_id, partition_key=request.user_mail)
 
         return {
             "message": "Report access record(s) deleted successfully",
