@@ -561,7 +561,7 @@ If any check fails → remove the statement.
 -Only return the fallback message if the Vetted Results are entirely unrelated to the subject of the user's question.
 
 If no relevant information exists to address the user's question, respond exactly with and no citations:
-"I couldn't find relevant information in the content documents to answer your question. This may be due to applied filters limiting available results. Please try rephrasing your question, adjusting your filters, or check if the information exists in the uploaded documents."
+"The search didn't return any relevant documents. Please try rephrasing your question, providing more context, or adjusting your filters (i.e., selecting a different persona or clearing out the persona option). "
 This is a FINAL RESPONSE. Do not add explanations, do not add extra sentences, and do not include any citations or reference tokens.
 
 Examples of relevance:
@@ -570,7 +570,7 @@ If the user asks about “Azure Cognitive Search indexers,” a Vetted Result ex
 A Vetted Result that only mentions “Azure” or “search services” in passing, without explaining indexers, is not relevant.
 
 If the topic is not discussed, respond exactly with:
-"I couldn't find relevant information in the content documents to answer your question. This may be due to limited available results.
+"The search didn't return any relevant documents. Please try rephrasing your question, providing more context, or adjusting your filters (i.e., selecting a different persona or clearing out the persona option)."
 
 ## CITATION INSTRUCTIONS (READ CAREFULLY — STRICT):
 
@@ -605,7 +605,7 @@ If any check fails, fix the answer before returning it.
 
 - Every answer MUST include citations. If you cannot cite a source from the Vetted Results for the information, DO NOT include that information in your answer.
 - If you cannot answer the question with cited information from the Vetted Results, respond with: 
-"I couldn't find relevant information in the content documents to answer your question. This may be due to applied filters limiting available results. Please try rephrasing your question, adjusting your filters, or check if the information exists in the uploaded documents."
+ "The search didn't return any relevant documents. Please try rephrasing your question, providing more context, or adjusting your filters (i.e., selecting a different persona or clearing out the persona option). "
 
 """
 
