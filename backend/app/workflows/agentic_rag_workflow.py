@@ -130,7 +130,7 @@ class AgenticRAGWorkflow:
                 results = await search_service.search_async(
                     query=search_query,
                     search_mode="hybrid",
-                    top_k=15,
+                    top_k=10,
                     filters=None,
                     exclude_ids=list(state.processed_content_ids)
                 )                            
