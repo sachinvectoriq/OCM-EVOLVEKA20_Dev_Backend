@@ -30,8 +30,6 @@ from azure.search.documents.aio import SearchClient
 from azure.search.documents.models import (
     VectorizedQuery,
     QueryType,
-    QueryCaptionType,
-    QueryAnswerType
 )
 from azure.core.exceptions import HttpResponseError
 
@@ -324,11 +322,17 @@ class SearchService(ISearchService):
                 
                 # Add semantic ranking if enabled
                 if use_semantic_ranking:
+                    # Pass plain string values ("extractive") rather than the
+                    # QueryCaptionType/QueryAnswerType enums. Newer
+                    # azure-search-documents betas serialize the enum as
+                    # "querycaptiontype.extractive", which the service rejects
+                    # with InvalidCaptionsOption. String literals are accepted
+                    # across SDK versions.
                     search_params.update({
                         "query_type": QueryType.SEMANTIC,
                         "semantic_configuration_name": self._semantic_config_name,
-                        "query_caption": QueryCaptionType.EXTRACTIVE,
-                        "query_answer": QueryAnswerType.EXTRACTIVE
+                        "query_caption": "extractive",
+                        "query_answer": "extractive"
                     })
                 
                 # Execute search
