@@ -4,7 +4,7 @@ fastapi>=0.109.0
 uvicorn[standard]>=0.27.0
 
 # Azure Core Dependencies
-azure-search-documents>=11.6.0b1  # Pre-release required for AIServicesAccountIdentity
+azure-search-documents>=11.7.0b2  # Pre-release required for AIServicesAccountIdentity
 azure-storage-blob>=12.24.0
 azure-identity>=1.15.0
 azure-cosmos>=4.5.0
