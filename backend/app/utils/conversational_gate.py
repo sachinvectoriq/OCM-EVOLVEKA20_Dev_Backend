@@ -93,6 +93,37 @@ _META_PATTERNS = [
     re.compile(r"^give\s+me\s+bullet\s+points\b"),
 ]
 
+# Follow-up questions that seek NEW information about a previously discussed
+# topic (typically via a pronoun: "it", "that", "this", "they", "them",
+# "those", "these"). These are REAL queries and MUST always be sent to the RAG
+# pipeline, never answered by the gate. The LLM classifier occasionally
+# mis-labels them as meta directives ("make it shorter"), so we detect them
+# deterministically here and force them through.
+_FOLLOWUP_PATTERNS = [
+    re.compile(r"^what\s+(does|do|did|is|are|was|were)\s+(it|that|this|they|them|those|these)\b"),
+    re.compile(r"^what\s+(does|do|did)\s+(it|that|this|they|them|those|these)\s+stand\s+for\b"),
+    re.compile(r"^how\s+(does|do|did|is|are|was|were|can|would|should)\s+(it|that|this|they|them|those|these)\b"),
+    re.compile(r"^(who|whom)\s+(owns|maintains|manages|handles|runs|created|made|uses)\s+(it|that|this|they|them|those|these)\b"),
+    re.compile(r"^(why|when|where|which)\s+(does|do|did|is|are|was|were|can|would|should)\s+(it|that|this|they|them|those|these)\b"),
+    re.compile(r"^what\s+about\s+"),
+    re.compile(r"^and\s+(after\s+that|then|what|how|why|when|where)\b"),
+    re.compile(r"^(what'?s|what\s+is)\s+next\b"),
+    re.compile(r"^can\s+you\s+give\s+(me\s+)?an?\s+example\b"),
+]
+
+
+def _is_forced_pipeline_query(normalized: str) -> bool:
+    """Return ``True`` for follow-up questions that must go to the RAG pipeline.
+
+    These reference a prior topic (usually via a pronoun) but ask for NEW
+    information, so they are real queries — never conversational. Detected
+    deterministically so the flaky LLM gate cannot mis-route them.
+    """
+    for pattern in _FOLLOWUP_PATTERNS:
+        if pattern.search(normalized):
+            return True
+    return False
+
 
 def _fast_path_reply(text: str) -> Optional[str]:
     """Return a canned reply for obvious conversational inputs, else ``None``.
@@ -107,6 +138,11 @@ def _fast_path_reply(text: str) -> Optional[str]:
     normalized = re.sub(r"\s+", " ", normalized)
 
     if not normalized:
+        return None
+
+    # Follow-up questions that seek new info always pass through to the pipeline,
+    # even if a later pattern might superficially match a meta/identity phrase.
+    if _is_forced_pipeline_query(normalized):
         return None
 
     if normalized in _GREETING_EXACT:
@@ -224,12 +260,10 @@ You must NEVER answer:
 - "capital of France"
 - "what is python"
 - "what is a CRG"
-- "what does it do" / "what does it stand for" / "how does it work"
 - "who maintains the ESF"
 - "explain machine learning"
 - "what's 2 + 2"
 - ANY question that seeks knowledge, even if you know the answer.
-- ANY follow-up question that references a prior topic via a pronoun.
 - ANY question about the company's onboarding content (those belong to the pipeline).
 
 For these, set is_conversational = false and leave reply empty.
@@ -296,6 +330,14 @@ class ConversationalGate:
         """
         text = (message or "").strip()
         if not text:
+            return None
+
+        # Deterministic guard: follow-up questions ("what does it do", "how does
+        # it work", ...) always go to the pipeline. Checked before the LLM so it
+        # can never mis-route them as conversational/meta.
+        normalized = re.sub(r"\s+", " ", re.sub(r"[!.?,]+$", "", text.lower()).strip())
+        if _is_forced_pipeline_query(normalized):
+            self.logger.info("ConversationalGate forced pipeline pass-through (follow-up question).")
             return None
 
         # Deterministic fast-path for obvious greetings / identity / meta.
