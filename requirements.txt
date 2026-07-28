@@ -11,7 +11,7 @@ azure-cosmos>=4.5.0
 azure-keyvault-secrets>=4.9.0
 
 # AI and Agent Framework
-agent-framework==1.0.0b260130
+agent-framework-core==1.0.0b260130
 azure-ai-inference>=1.0.0b1
 azure-ai-projects>=1.0.0b1
 azure-ai-evaluation>=1.0.0b1
