@@ -168,8 +168,8 @@ def create_app() -> FastAPI:
         description="FastAPI backend for multimodal document search with agentic RAG",
         version="1.0.0",
         docs_url="/docs",
-        redoc_url=None,
-        openapi_url=None,
+        redoc_url="/redoc",
+        openapi_url="/openapi.json",
         lifespan=lifespan,
     )
 
