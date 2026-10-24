@@ -64,9 +64,8 @@ Response Formats:
     - Conversations: Returns session metadata with message counts and timestamps
 
 Security:
-    - Optional Bearer token authentication (configured via HTTPBearer)
-    - Production deployments should set auto_error=True for strict auth
-    - Tokens validated against Azure AD/Entra ID in production
+    - All incoming chat requests require a KA token, validated by API middleware.
+    - Verified caller identity is recorded independently of client user_id fields.
 
 Dependencies:
     - IChatService: Orchestrates RAG and workflow execution
@@ -77,7 +76,6 @@ Dependencies:
 from typing import Dict, Any, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from app.api.schemas.chat import ChatRequest, ChatResponse, QueryRequest, QueryResponse
 from app.api.dependencies import get_container, get_logger, get_chat_service, get_settings
@@ -86,10 +84,6 @@ from app.utils.conversational_gate import get_conversational_gate
 
 # Initialize router - redirect_slashes=False prevents 307 redirects that lose auth headers
 router = APIRouter(prefix="/chat", tags=["Chat"], redirect_slashes=False)
-
-# Security scheme for Bearer token authentication (auto_error=False for optional auth in dev)
-security = HTTPBearer(auto_error=False)
-
 
 def _require_user_id(user_id: str | None) -> str:
     if user_id is None or not user_id.strip():
@@ -100,54 +94,12 @@ def _require_user_id(user_id: str | None) -> str:
     return user_id
 
 
-async def verify_token(
-    credentials: HTTPAuthorizationCredentials | None = Depends(security),
-    logger = Depends(get_logger),
-) -> str | None:
-    """
-    Verify the Bearer token from the Authorization header.
-    
-    This is a placeholder implementation. In production, you should:
-    - Validate JWT tokens against Azure AD / Entra ID
-    - Check token expiration, audience, issuer, etc.
-    - Extract user claims for authorization
-    
-    Note: Currently allows unauthenticated requests for development.
-    Set auto_error=True on HTTPBearer for production.
-    
-    Args:
-        credentials: The HTTP Bearer credentials from the request (optional).
-        
-    Returns:
-        The token string if provided, None otherwise.
-    """
-    if not credentials or not credentials.credentials:
-        # Allow unauthenticated requests for development
-        # TODO: In production, raise 401 here
-        logger.warning("Unauthenticated request - allowing for development")
-        return None
-    
-    # TODO: Implement proper JWT validation with Azure AD
-    # For now, we just check that a token is present
-    token = credentials.credentials
-    
-    # Placeholder: In production, validate the token here
-    # Example with Azure AD:
-    # - Decode and verify JWT signature
-    # - Check iss (issuer), aud (audience), exp (expiration)
-    # - Extract user identity from claims
-    
-    logger.debug("Token authentication successful")
-    return token
-
-
 @router.post("", response_model=ChatResponse)
 @router.post("/", response_model=ChatResponse, include_in_schema=False)
 async def chat(
     request: ChatRequest,
     chat_service: IChatService = Depends(get_chat_service),
     logger = Depends(get_logger),
-    token: str | None = Depends(verify_token),
 ) -> ChatResponse:
     """
     Process a chat message and return an AI-generated response with citations.
@@ -159,7 +111,6 @@ async def chat(
     
     Args:
         request: The chat request containing the message and optional filters.
-        token: The authenticated user's token (injected by dependency).
         
     Returns:
         ChatResponse with the AI-generated answer and source citations.

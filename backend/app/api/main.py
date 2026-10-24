@@ -20,7 +20,9 @@ if connection_string:
     )
 
 from app.core.container import Container
-from app.api.routes import chat, health, pipeline
+from app.api.routes import auth, chat, health, pipeline
+from app.api.security import KATokenValidator, install_api_security
+from app.api.request_audit import APIRequestAuditStore
 
 try:
     from agent_framework.azure import AzureAIClient
@@ -132,9 +134,27 @@ async def _ensure_cosmos_resources() -> None:
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info("Knowledge Assistant API starting up...")
+    audit_client = None
 
     try:
         settings = container.config()
+        # Use exactly the same configured key as the existing SAML token issuer.
+        app.state.api_token_validator = KATokenValidator(saml.JWT_SECRET_KEY)
+        audit_options = settings.api_audit
+        audit_database = audit_options.database_name or settings.cosmos_db.database_name
+        if (
+            audit_database == settings.cosmos_db.database_name
+            and audit_options.container_name == settings.cosmos_db.container_name
+        ):
+            raise ValueError("API audit logs require a separate Cosmos container")
+        audit_client = container.cosmos_client()
+        app.state.api_audit_store = await APIRequestAuditStore.connect(
+            audit_client,
+            audit_database,
+            audit_options.container_name,
+            auto_create=audit_options.auto_create,
+            write_timeout_seconds=audit_options.write_timeout_seconds,
+        )
         logger.info("Configuration loaded successfully:")
         logger.info(f"  Environment: {os.getenv('ENVIRONMENT', 'development')}")
         logger.info(f"  Search Service: {settings.search_service.endpoint}")
@@ -154,12 +174,17 @@ async def lifespan(app: FastAPI):
         await _configure_foundry_telemetry()
 
     except Exception as e:
+        if audit_client is not None:
+            await audit_client.close()
         logger.error(f"Failed to initialize application: {e}")
         raise
 
-    yield
-
-    logger.info("Knowledge Assistant API shutting down...")
+    try:
+        yield
+    finally:
+        if audit_client is not None:
+            await audit_client.close()
+        logger.info("Knowledge Assistant API shutting down...")
 
 
 def create_app() -> FastAPI:
@@ -176,14 +201,19 @@ def create_app() -> FastAPI:
     # ✅ THIS LINE FIXES YOUR PERFORMANCE ISSUE
     FastAPIInstrumentor.instrument_app(app)
 
+    # CORS is added afterwards so preflight requests and auth error responses
+    # receive the same CORS handling as successful requests.
+    install_api_security(app)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=["*"],
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
+        expose_headers=["X-Request-ID"],
     )
 
+    app.include_router(auth.router, prefix="/api")
     app.include_router(chat.router, prefix="/api")
     app.include_router(health.router, prefix="/api")
     app.include_router(pipeline.router, prefix="/api")

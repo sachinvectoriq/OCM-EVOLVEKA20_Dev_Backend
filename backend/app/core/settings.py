@@ -201,13 +201,26 @@ class APISettings(BaseSettings):
     host: str = Field(default="0.0.0.0", description="API host")
     port: int = Field(default=8000, description="API port")
     rate_limit_per_minute: int = Field(default=60, description="Rate limit per user per minute")
-    enable_auth: bool = Field(default=False, description="Enable authentication")
+    enable_auth: bool = Field(default=True, description="Legacy setting; API token authentication is always enforced")
     
     # CORS settings
     enable_cors: bool = Field(default=True, description="Enable CORS (Cross-Origin Resource Sharing)")
     
     # API documentation
     enable_docs: bool = Field(default=True, description="Enable Swagger/OpenAPI documentation endpoints")
+
+
+class APIAuditSettings(BaseSettings):
+    """Separate API request audit container; never reuse the conversation container."""
+
+    model_config = SettingsConfigDict(
+        env_prefix="API_AUDIT_", env_file=".env", env_file_encoding="utf-8", extra="ignore"
+    )
+
+    database_name: Optional[str] = None  # Defaults to COSMOS_DATABASE_NAME.
+    container_name: str = Field(default="api_request_audit", min_length=1)
+    auto_create: bool = False
+    write_timeout_seconds: float = Field(default=2.0, gt=0, le=30)
 
 
 class Settings(BaseSettings):
@@ -230,6 +243,7 @@ class Settings(BaseSettings):
     default_language: str = Field(default="en", description="Default content language when no language is supplied (en | fr-ca)")
     workflow: WorkflowSettings = Field(default_factory=WorkflowSettings)
     api: APISettings = Field(default_factory=APISettings)
+    api_audit: APIAuditSettings = Field(default_factory=APIAuditSettings)
 
     model_config = SettingsConfigDict(
         env_file=".env",
