@@ -192,9 +192,9 @@ def create_app() -> FastAPI:
         title="Knowledge Assistant Agentic RAG",
         description="FastAPI backend for multimodal document search with agentic RAG",
         version="1.0.0",
-        docs_url="/docs",
-        redoc_url="/redoc",
-        openapi_url="/openapi.json",
+        docs_url=None,
+        redoc_url=None,
+        openapi_url=None,
         lifespan=lifespan,
     )
 
